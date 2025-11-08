@@ -17,6 +17,8 @@
 #include <XmlRpc.h>
 
 #include <Eigen/Dense>
+#include <sstream>
+#include <string>
 
 #define PARAM_PRINTER(args) std::cout << "[ParamLoader] " << args;
 
@@ -90,18 +92,58 @@ public:
     }
     std::cerr << std::endl;
     
-    // If relative path didn't work, try absolute with ros::param::get()
+    // If vector load failed, try getting as XmlRpc and parsing manually
     if (tmp_vec.size() == 0)
     {
-      bool found = ros::param::get(full_param_path, tmp_vec);
-      std::cerr << "[ParamLoader] DEBUG: absolute ros::param::get('" << full_param_path << "') -> found=" 
-                << (found ? "true" : "false") << " size=" << tmp_vec.size();
-      if (tmp_vec.size() > 0) {
-        std::cerr << " [" << tmp_vec[0];
-        for (size_t i = 1; i < tmp_vec.size(); i++) std::cerr << ", " << tmp_vec[i];
-        std::cerr << "]";
+      XmlRpc::XmlRpcValue xml_val;
+      if (nh.getParam(name, xml_val))
+      {
+        int xml_type = (int)xml_val.getType();
+        std::cerr << "[ParamLoader] DEBUG: Retrieved as XmlRpc type=" << xml_type << std::endl;
+        
+        // If it's an array type (7), try to convert
+        if (xml_type == 7)  // XmlRpcType::TypeArray
+        {
+          try {
+            for (int i = 0; i < xml_val.size(); i++) {
+              tmp_vec.push_back(static_cast<double>(xml_val[i]));
+            }
+            std::cerr << "[ParamLoader] DEBUG: Successfully parsed XmlRpc array, size=" << tmp_vec.size() << std::endl;
+          } catch (...) {
+            std::cerr << "[ParamLoader] DEBUG: Failed to parse XmlRpc array" << std::endl;
+          }
+        }
+        // If it's a string type (4), try to parse it as [x, y, z]
+        else if (xml_type == 4)  // XmlRpcType::TypeString
+        {
+          std::string str_val = static_cast<std::string>(xml_val);
+          std::cerr << "[ParamLoader] DEBUG: Parameter is a string: '" << str_val << "'" << std::endl;
+          
+          // Try to parse as YAML-style array [x, y, z]
+          size_t start = str_val.find('[');
+          size_t end = str_val.rfind(']');
+          if (start != std::string::npos && end != std::string::npos && start < end)
+          {
+            std::string content = str_val.substr(start + 1, end - start - 1);
+            std::istringstream iss(content);
+            std::string token;
+            while (std::getline(iss, token, ','))
+            {
+              // Trim whitespace
+              token.erase(0, token.find_first_not_of(" \t\n\r"));
+              token.erase(token.find_last_not_of(" \t\n\r") + 1);
+              if (!token.empty()) {
+                try {
+                  tmp_vec.push_back(std::stod(token));
+                } catch (...) {
+                  std::cerr << "[ParamLoader] DEBUG: Failed to parse token '" << token << "'" << std::endl;
+                }
+              }
+            }
+            std::cerr << "[ParamLoader] DEBUG: Parsed string as array, size=" << tmp_vec.size() << std::endl;
+          }
+        }
       }
-      std::cerr << std::endl;
     }
     
     if (tmp_vec.size() != _Rows)
