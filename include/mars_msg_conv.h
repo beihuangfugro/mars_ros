@@ -52,7 +52,7 @@
 
 #include <Eigen/Dense>
 
-#define DEFAULT_FRAME_ID "world"
+#define DEFAULT_FRAME_ID "enu"
 
 ///
 /// \brief The MarsMsgConv class Conversion between MaRS types and ROS messages
