@@ -108,6 +108,16 @@ public:
   {
     std::cerr << "[ParamLoader] Constructor called with NodeHandle namespace: '" << nh.getNamespace() << "'" << std::endl;
     
+    // List all available parameters to debug timing issue
+    std::vector<std::string> all_params;
+    ros::param::getParamNames(all_params);
+    std::cerr << "[ParamLoader] DEBUG: Total parameters on server: " << all_params.size() << std::endl;
+    for (const auto& p : all_params) {
+      if (p.find("mars_gps_node") != std::string::npos) {
+        std::cerr << "[ParamLoader]   Found: " << p << std::endl;
+      }
+    }
+    
     publish_on_propagation_ = nh.param<bool>("pub_on_prop", publish_on_propagation_);
     use_ros_time_now_ = nh.param<bool>("use_ros_time_now", use_ros_time_now_);
     verbose_output_ = nh.param<bool>("verbose", verbose_output_);
