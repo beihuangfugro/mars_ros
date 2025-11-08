@@ -14,6 +14,7 @@
 #define MARSGPS_LOADER_H
 
 #include <ros/node_handle.h>
+#include <XmlRpc.h>
 
 #include <Eigen/Dense>
 
@@ -156,10 +157,19 @@ public:
     
     // Direct test of what the parameter server has
     std::vector<double> test_gyro, test_antenna;
-    ros::param::get("/mars_gps_node/gyro_bias_init", test_gyro);
-    ros::param::get("/mars_gps_node/antenna_lever_arm", test_antenna);
+    bool found_gyro = ros::param::get("/mars_gps_node/gyro_bias_init", test_gyro);
+    bool found_antenna = ros::param::get("/mars_gps_node/antenna_lever_arm", test_antenna);
     std::cerr << "[ParamLoader] DEBUG: Direct global lookup - gyro_bias_init size=" << test_gyro.size() 
               << " antenna_lever_arm size=" << test_antenna.size() << std::endl;
+    
+    // Try getting as XmlRpc value to see what it actually is
+    XmlRpc::XmlRpcValue gyro_xml, antenna_xml;
+    if (nh.getParam("gyro_bias_init", gyro_xml)) {
+      std::cerr << "[ParamLoader] DEBUG: gyro_bias_init via getParam - type=" << (int)gyro_xml.getType() 
+                << " (0=invalid,1=bool,2=int,3=double,4=string,5=datetime,6=base64,7=array,8=struct)" << std::endl;
+    } else {
+      std::cerr << "[ParamLoader] DEBUG: gyro_bias_init via getParam - NOT FOUND" << std::endl;
+    }
     
     check_and_load<3>(gyro_bias_init_, nh, "gyro_bias_init");
     check_and_load<3>(antenna_lever_arm_, nh, "antenna_lever_arm");
