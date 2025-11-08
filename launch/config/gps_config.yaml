@@ -45,8 +45,12 @@ core_init_cov_bw: [0.0076,0.0076,0.0076]
 core_init_cov_ba: [0.01,0.01,0.01]
 
 # GPS Settings
-gps1_pos_meas_noise: [0.5,0.5,0.5]
+# Measurement noise: how much we trust GPS position measurements
+# RELAXED: 1.5 m std dev to allow filter to adapt during convergence
+gps1_pos_meas_noise: [1.5,1.5,1.5]
 gps1_vel_meas_noise: [0.1,0.1,0.1]
 gps1_use_dyn_meas_noise: false
 gps1_cal_ig: [0,0,0]
-gps1_state_init_cov: [0.0000001,0.0000001,0.0000001]
+# Calibration state uncertainty: GPS sensor uncertainty (lever arm, etc.)
+# RELAXED: 1e-02 instead of 1e-07 to allow calibration adaptation during early filter convergence
+gps1_state_init_cov: [0.01,0.01,0.01]
