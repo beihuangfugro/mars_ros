@@ -79,10 +79,19 @@ public:
     std::string nh_namespace = nh.getNamespace();
     std::string full_param_path = nh_namespace + "/" + name;
     
-    // Use nh.param() instead of nh.getParam() - it handles relative namespace paths correctly
+    // Try relative path first
     nh.param(name, tmp_vec, std::vector<double>());
-    std::cerr << "[ParamLoader] DEBUG: namespace='" << nh_namespace << "' param_path='" << full_param_path 
+    std::cerr << "[ParamLoader] DEBUG: namespace='" << nh_namespace << "' relative_param='" << name 
               << "' size=" << tmp_vec.size() << std::endl;
+    
+    // If relative path didn't work, try absolute path
+    if (tmp_vec.size() == 0)
+    {
+      ros::NodeHandle global_nh;
+      global_nh.getParam(full_param_path, tmp_vec);
+      std::cerr << "[ParamLoader] DEBUG: trying absolute path='" << full_param_path 
+                << "' size=" << tmp_vec.size() << std::endl;
+    }
     
     if (tmp_vec.size() != _Rows)
     {
