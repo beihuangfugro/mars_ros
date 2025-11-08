@@ -21,9 +21,15 @@ sub_sensor_cb_buffer_size: 1
 # Node specific settings
 publish_gps_enu: true
 
-## Yaw initialization
+## Attitude initialization (3-DOF from GREAT-MSF calibration)
 enable_manual_yaw_init: false
+pitch_init_deg: 3.093
+roll_init_deg: 0.118
 yaw_init_deg: -30
+# Gyro bias initialization [rad/s] from GREAT-MSF (0.111, 0.0089, -0.0236)
+gyro_bias_init: [0.111, 0.0089, -0.0236]
+# Antenna lever arm [m] in sensor frame from GREAT-MSF
+antenna_lever_arm: [-0.05, -0.41, 0.15]
 
 # Sensor Settings
 gyro_rate_noise: 0.0023089
