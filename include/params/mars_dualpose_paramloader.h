@@ -192,7 +192,7 @@ public:
   }
 
   template <int _Rows>
-  void check_and_load(Eigen::Matrix<double, _Rows, 1>& vec, const ros::NodeHandle nh, const std::string& name)
+  void check_and_load(Eigen::Matrix<double, _Rows, 1>& vec, const ros::NodeHandle& nh, const std::string& name)
   {
     std::vector<double> tmp_vec;
     nh.param(name, tmp_vec, std::vector<double>());
