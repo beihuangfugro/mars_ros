@@ -73,7 +73,17 @@ MarsWrapperGps::MarsWrapperGps(ros::NodeHandle nh)
     gps1_sensor_sptr_->use_dynamic_meas_noise_ = m_sett_.gps1_use_dyn_meas_noise_;
 
     GpsSensorData gps_calibration;
-    gps_calibration.state_.p_ig_ = Eigen::Vector3d(m_sett_.gps1_cal_ig_);
+    // CRITICAL FIX: Apply antenna lever arm from config, not just gps1_cal_ig
+    // antenna_lever_arm represents the offset from IMU to GPS antenna in body frame
+    if (m_sett_.antenna_lever_arm_.norm() > 1e-6)
+    {
+      gps_calibration.state_.p_ig_ = m_sett_.antenna_lever_arm_;
+      std::cout << "GPS sensor antenna offset initialized to: " << m_sett_.antenna_lever_arm_.transpose() << " m" << std::endl;
+    }
+    else
+    {
+      gps_calibration.state_.p_ig_ = Eigen::Vector3d(m_sett_.gps1_cal_ig_);
+    }
 
     Eigen::Matrix<double, 9, 9> gps_cov;
     gps_cov.setZero();
@@ -237,8 +247,7 @@ void MarsWrapperGps::ImuMeasurementCallback(const sensor_msgs::ImuConstPtr& meas
     // Set antenna lever arm if provided  
     if (m_sett_.antenna_lever_arm_.norm() > 0)
     {
-      std::cout << "Antenna lever arm set to: " << m_sett_.antenna_lever_arm_.transpose() << " m" << std::endl;
-      ROS_WARN_STREAM("Antenna lever arm needs to be applied to GPS sensor state");
+      std::cout << "Antenna lever arm APPLIED to GPS sensor state: " << m_sett_.antenna_lever_arm_.transpose() << " m" << std::endl;
     }
   }
 
