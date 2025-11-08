@@ -26,8 +26,13 @@
   <arg name="config_file" default="$(find mars_ros)/launch/config/gps_config.yaml" />
 
   <!-- Load parameters into mars_gps_node namespace BEFORE launching node -->
+  <!-- Using group + rosparam for bulk loading -->
   <group ns="mars_gps_node">
     <rosparam command="load" file="$(arg config_file)" />
+    
+    <!-- Explicit parameters as workaround for vector loading issue -->
+    <param name="gyro_bias_init" value="[0.111, 0.0089, -0.0236]" type="yaml" />
+    <param name="antenna_lever_arm" value="[-0.05, -0.41, 0.15]" type="yaml" />
   </group>
 
   <!-- Launching the mars_ros single_gps_node -->
