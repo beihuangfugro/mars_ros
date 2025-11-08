@@ -76,8 +76,12 @@ public:
   void check_and_load(Eigen::Matrix<double, _Rows, 1>& vec, const ros::NodeHandle& nh, const std::string& name)
   {
     std::vector<double> tmp_vec;
+    std::string nh_namespace = nh.getNamespace();
+    std::string full_param_path = nh_namespace + "/" + name;
+    
     bool found = nh.getParam(name, tmp_vec);
-    std::cerr << "[ParamLoader] DEBUG: " << name << " found=" << (found ? "true" : "false") << " size=" << tmp_vec.size() << std::endl;
+    std::cerr << "[ParamLoader] DEBUG: namespace='" << nh_namespace << "' param_path='" << full_param_path 
+              << "' found=" << (found ? "true" : "false") << " size=" << tmp_vec.size() << std::endl;
     
     if (tmp_vec.size() != _Rows)
     {
@@ -92,6 +96,8 @@ public:
 
   ParamLoad(const ros::NodeHandle& nh)
   {
+    std::cerr << "[ParamLoader] Constructor called with NodeHandle namespace: '" << nh.getNamespace() << "'" << std::endl;
+    
     publish_on_propagation_ = nh.param<bool>("pub_on_prop", publish_on_propagation_);
     use_ros_time_now_ = nh.param<bool>("use_ros_time_now", use_ros_time_now_);
     verbose_output_ = nh.param<bool>("verbose", verbose_output_);
