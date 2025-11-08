@@ -25,8 +25,10 @@
   <!-- Config File -->
   <arg name="config_file" default="$(find mars_ros)/launch/config/gps_config.yaml" />
 
-  <!-- Load parameters BEFORE launching node -->
-  <rosparam command="load" file="$(arg config_file)" ns="/mars_gps_node" />
+  <!-- Load parameters into mars_gps_node namespace BEFORE launching node -->
+  <group ns="mars_gps_node">
+    <rosparam command="load" file="$(arg config_file)" />
+  </group>
 
   <!-- Launching the mars_ros single_gps_node -->
   <node name="mars_gps_node" pkg="mars_ros" type="gps_node" clear_params="false" output="screen" respawn="$(arg respawn)">
