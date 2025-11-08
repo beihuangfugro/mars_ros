@@ -27,7 +27,7 @@ yaw_init_deg: -30
 
 # Sensor Settings
 gyro_rate_noise: 0.0023089
-gyro_bias_noise: 0.0012655
+gyro_bias_noise: 0  # Set to 0 to keep bias constant (GREAT-MSF uses constant bias model)
 acc_noise: 0.038932
 acc_bias_noise: 0.057518
 

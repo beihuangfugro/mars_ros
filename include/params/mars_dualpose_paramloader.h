@@ -39,6 +39,8 @@ public:
   double pitch_init_deg_{ 0 };
   double roll_init_deg_{ 0 };
   double yaw_init_deg_{ 0 };
+  Eigen::Vector3d gyro_bias_init_{ 0, 0, 0 };  ///< Gyro bias initialization [rad/s]
+  Eigen::Vector3d antenna_lever_arm_{ 0, 0, 0 };  ///< Antenna lever arm in sensor frame [m]
   int auto_mag_init_samples_{ 30 };
 
   bool use_tcpnodelay_{ false };
@@ -231,6 +233,8 @@ public:
     nh.param("pitch_init_deg", pitch_init_deg_, double());
     nh.param("roll_init_deg", roll_init_deg_, double());
     nh.param("yaw_init_deg", yaw_init_deg_, double());
+    check_and_load<3>(gyro_bias_init_, nh, "gyro_bias_init");
+    check_and_load<3>(antenna_lever_arm_, nh, "antenna_lever_arm");
     auto_mag_init_samples_ = uint32_t(nh.param<int>("auto_mag_init_samples", int(auto_mag_init_samples_)));
 
     // ROS Settings

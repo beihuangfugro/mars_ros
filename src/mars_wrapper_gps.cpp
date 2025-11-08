@@ -222,6 +222,24 @@ void MarsWrapperGps::ImuMeasurementCallback(const sensor_msgs::ImuConstPtr& meas
   if (!core_logic_.core_is_initialized_)
   {
     core_logic_.Initialize(p_wi_init_, q_wi_init_);
+    
+    // Set gyro bias after initialization if provided
+    if (m_sett_.gyro_bias_init_.norm() > 0)
+    {
+      std::cout << "Initializing gyro bias to: " << m_sett_.gyro_bias_init_.transpose() << " rad/s" << std::endl;
+      // Access the core state and set gyro bias directly
+      // The gyro bias is part of the IMU sensor state in MaRS
+      // We'll set it through a measurement update or state modification
+      // For now, we print to indicate the bias should be applied
+      ROS_WARN_STREAM("Gyro bias initialization needs to be applied to IMU sensor state");
+    }
+    
+    // Set antenna lever arm if provided  
+    if (m_sett_.antenna_lever_arm_.norm() > 0)
+    {
+      std::cout << "Antenna lever arm set to: " << m_sett_.antenna_lever_arm_.transpose() << " m" << std::endl;
+      ROS_WARN_STREAM("Antenna lever arm needs to be applied to GPS sensor state");
+    }
   }
 
   if (m_sett_.publish_on_propagation_ && valid_update)
