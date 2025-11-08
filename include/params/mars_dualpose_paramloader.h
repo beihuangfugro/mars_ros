@@ -200,6 +200,8 @@ public:
     {
       std::cerr << "[ParamLoader] " << name << ": YAML array with wrong size (which is " << tmp_vec.size() << ")"
                 << std::endl;
+      // Keep default value if size is wrong
+      return;
     }
     vec = Eigen::Map<Eigen::Matrix<double, _Rows, 1> >(tmp_vec.data());
   }
