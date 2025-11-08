@@ -36,6 +36,8 @@ public:
   bool use_pressure_{ true };
   bool use_magnetometer_{ false };
   bool enable_manual_yaw_init_{ false };
+  double pitch_init_deg_{ 0 };
+  double roll_init_deg_{ 0 };
   double yaw_init_deg_{ 0 };
   int auto_mag_init_samples_{ 30 };
 
@@ -226,6 +228,8 @@ public:
     use_pressure_ = nh.param<bool>("use_pressure", use_pressure_);
     use_magnetometer_ = nh.param<bool>("use_magnetometer", use_magnetometer_);
     enable_manual_yaw_init_ = nh.param<bool>("enable_manual_yaw_init", enable_manual_yaw_init_);
+    nh.param("pitch_init_deg", pitch_init_deg_, double());
+    nh.param("roll_init_deg", roll_init_deg_, double());
     nh.param("yaw_init_deg", yaw_init_deg_, double());
     auto_mag_init_samples_ = uint32_t(nh.param<int>("auto_mag_init_samples", int(auto_mag_init_samples_)));
 

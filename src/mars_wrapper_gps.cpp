@@ -110,12 +110,33 @@ MarsWrapperGps::MarsWrapperGps(ros::NodeHandle nh)
   // Set initial orientation if manual setting is enabled
   if (this->m_sett_.enable_manual_yaw_init_)
   {
+    const double pitch = m_sett_.pitch_init_deg_ * (M_PI / 180);
+    const double roll = m_sett_.roll_init_deg_ * (M_PI / 180);
     const double yaw = m_sett_.yaw_init_deg_ * (M_PI / 180);
-    Eigen::Matrix3d R_wi;
-    R_wi << cos(yaw), -sin(yaw), 0, sin(yaw), cos(yaw), 0, 0, 0, 1;
+    
+    // Create rotation matrix from Euler angles (ZYX convention: yaw, pitch, roll)
+    // R = Rz(yaw) * Ry(pitch) * Rx(roll)
+    Eigen::Matrix3d Rx, Ry, Rz, R_wi;
+    
+    Rx << 1, 0, 0,
+          0, cos(roll), -sin(roll),
+          0, sin(roll), cos(roll);
+    
+    Ry << cos(pitch), 0, sin(pitch),
+          0, 1, 0,
+          -sin(pitch), 0, cos(pitch);
+    
+    Rz << cos(yaw), -sin(yaw), 0,
+          sin(yaw), cos(yaw), 0,
+          0, 0, 1;
+    
+    R_wi = Rz * Ry * Rx;
     q_wi_init_ = Eigen::Quaterniond(R_wi);
 
-    std::cout << "Manual yaw initialization: " << yaw * (180 / M_PI) << "\n" << std::endl;
+    std::cout << "Manual attitude initialization:" << std::endl;
+    std::cout << "  Pitch: " << pitch * (180 / M_PI) << " deg" << std::endl;
+    std::cout << "  Roll:  " << roll * (180 / M_PI) << " deg" << std::endl;
+    std::cout << "  Yaw:   " << yaw * (180 / M_PI) << " deg" << std::endl;
   }
 }
 
