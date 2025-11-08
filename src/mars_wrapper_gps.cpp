@@ -27,6 +27,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <string>
+#include <iomanip>
 
 using namespace mars;
 
@@ -275,6 +276,10 @@ void MarsWrapperGps::Gps1MeasurementCallback(const sensor_msgs::NavSatFixConstPt
 
   set_common_gps_reference(gps_meas.coordinates_);
 
+  ROS_INFO_STREAM("[GPS_CALLBACK] Processing GPS measurement: lat=" << std::fixed << std::setprecision(6) 
+                  << meas->latitude << " lon=" << meas->longitude << " alt=" << meas->altitude 
+                  << " t=" << timestamp.get_seconds());
+
   GpsMeasurementUpdate(gps1_sensor_sptr_, gps_meas, timestamp);
 
   // Publish GPS ENU as Odometry
@@ -352,8 +357,11 @@ void MarsWrapperGps::GpsMeasurementUpdate(std::shared_ptr<mars::GpsSensorClass> 
   // Call process measurement
   if (!core_logic_.ProcessMeasurement(sensor_sptr, timestamp, data))
   {
+    ROS_WARN_STREAM("[GPS_UPDATE FAILED] ProcessMeasurement returned false at t=" << timestamp.get_seconds());
     return;
   }
+
+  ROS_INFO_STREAM("[GPS_UPDATE SUCCESS] Measurement processed successfully at t=" << timestamp.get_seconds());
 
   // Publish the latest core state
   this->RunCoreStatePublisher();
