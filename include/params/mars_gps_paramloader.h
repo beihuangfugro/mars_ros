@@ -79,18 +79,28 @@ public:
     std::string nh_namespace = nh.getNamespace();
     std::string full_param_path = nh_namespace + "/" + name;
     
-    // Try relative path first
+    // Try relative path first with nh.param()
     nh.param(name, tmp_vec, std::vector<double>());
-    std::cerr << "[ParamLoader] DEBUG: namespace='" << nh_namespace << "' relative_param='" << name 
-              << "' size=" << tmp_vec.size() << std::endl;
+    std::cerr << "[ParamLoader] DEBUG: relative nh.param('" << name << "') -> size=" << tmp_vec.size();
+    if (tmp_vec.size() > 0) {
+      std::cerr << " [" << tmp_vec[0];
+      for (size_t i = 1; i < tmp_vec.size(); i++) std::cerr << ", " << tmp_vec[i];
+      std::cerr << "]";
+    }
+    std::cerr << std::endl;
     
-    // If relative path didn't work, try absolute path
+    // If relative path didn't work, try absolute with ros::param::get()
     if (tmp_vec.size() == 0)
     {
-      ros::NodeHandle global_nh;
-      global_nh.getParam(full_param_path, tmp_vec);
-      std::cerr << "[ParamLoader] DEBUG: trying absolute path='" << full_param_path 
-                << "' size=" << tmp_vec.size() << std::endl;
+      bool found = ros::param::get(full_param_path, tmp_vec);
+      std::cerr << "[ParamLoader] DEBUG: absolute ros::param::get('" << full_param_path << "') -> found=" 
+                << (found ? "true" : "false") << " size=" << tmp_vec.size();
+      if (tmp_vec.size() > 0) {
+        std::cerr << " [" << tmp_vec[0];
+        for (size_t i = 1; i < tmp_vec.size(); i++) std::cerr << ", " << tmp_vec[i];
+        std::cerr << "]";
+      }
+      std::cerr << std::endl;
     }
     
     if (tmp_vec.size() != _Rows)
@@ -143,6 +153,13 @@ public:
     std::cerr << "[ParamLoader] DEBUG: pitch_init_deg=" << pitch_init_deg_ 
               << ", roll_init_deg=" << roll_init_deg_ 
               << ", yaw_init_deg=" << yaw_init_deg_ << std::endl;
+    
+    // Direct test of what the parameter server has
+    std::vector<double> test_gyro, test_antenna;
+    ros::param::get("/mars_gps_node/gyro_bias_init", test_gyro);
+    ros::param::get("/mars_gps_node/antenna_lever_arm", test_antenna);
+    std::cerr << "[ParamLoader] DEBUG: Direct global lookup - gyro_bias_init size=" << test_gyro.size() 
+              << " antenna_lever_arm size=" << test_antenna.size() << std::endl;
     
     check_and_load<3>(gyro_bias_init_, nh, "gyro_bias_init");
     check_and_load<3>(antenna_lever_arm_, nh, "antenna_lever_arm");
