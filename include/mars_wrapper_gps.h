@@ -25,7 +25,7 @@
 #include <std_srvs/SetBool.h>
 
 #include <boost/bind/bind.hpp>
-#include <params/mars_dualpose_paramloader.h>
+#include <params/mars_gps_paramloader.h>
 
 ///
 /// \brief The MarsWrapperGps class MaRS single GPS node
