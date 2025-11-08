@@ -79,9 +79,10 @@ public:
     std::string nh_namespace = nh.getNamespace();
     std::string full_param_path = nh_namespace + "/" + name;
     
-    bool found = nh.getParam(name, tmp_vec);
+    // Use nh.param() instead of nh.getParam() - it handles relative namespace paths correctly
+    nh.param(name, tmp_vec, std::vector<double>());
     std::cerr << "[ParamLoader] DEBUG: namespace='" << nh_namespace << "' param_path='" << full_param_path 
-              << "' found=" << (found ? "true" : "false") << " size=" << tmp_vec.size() << std::endl;
+              << "' size=" << tmp_vec.size() << std::endl;
     
     if (tmp_vec.size() != _Rows)
     {
