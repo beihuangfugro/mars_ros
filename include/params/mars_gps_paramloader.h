@@ -79,18 +79,9 @@ public:
   void check_and_load(Eigen::Matrix<double, _Rows, 1>& vec, const ros::NodeHandle& nh, const std::string& name)
   {
     std::vector<double> tmp_vec;
-    std::string nh_namespace = nh.getNamespace();
-    std::string full_param_path = nh_namespace + "/" + name;
     
     // Try relative path first with nh.param()
     nh.param(name, tmp_vec, std::vector<double>());
-    std::cerr << "[ParamLoader] DEBUG: relative nh.param('" << name << "') -> size=" << tmp_vec.size();
-    if (tmp_vec.size() > 0) {
-      std::cerr << " [" << tmp_vec[0];
-      for (size_t i = 1; i < tmp_vec.size(); i++) std::cerr << ", " << tmp_vec[i];
-      std::cerr << "]";
-    }
-    std::cerr << std::endl;
     
     // If vector load failed, try getting as XmlRpc and parsing manually
     if (tmp_vec.size() == 0)
@@ -99,7 +90,6 @@ public:
       if (nh.getParam(name, xml_val))
       {
         int xml_type = (int)xml_val.getType();
-        std::cerr << "[ParamLoader] DEBUG: Retrieved as XmlRpc type=" << xml_type << std::endl;
         
         // If it's an array type (7), try to convert
         if (xml_type == 7)  // XmlRpcType::TypeArray
@@ -108,16 +98,14 @@ public:
             for (int i = 0; i < xml_val.size(); i++) {
               tmp_vec.push_back(static_cast<double>(xml_val[i]));
             }
-            std::cerr << "[ParamLoader] DEBUG: Successfully parsed XmlRpc array, size=" << tmp_vec.size() << std::endl;
           } catch (...) {
-            std::cerr << "[ParamLoader] DEBUG: Failed to parse XmlRpc array" << std::endl;
+            // Failed to parse XmlRpc array, will fall through to error below
           }
         }
         // If it's a string type (4), try to parse it as [x, y, z]
         else if (xml_type == 4)  // XmlRpcType::TypeString
         {
           std::string str_val = static_cast<std::string>(xml_val);
-          std::cerr << "[ParamLoader] DEBUG: Parameter is a string: '" << str_val << "'" << std::endl;
           
           // Try to parse as YAML-style array [x, y, z]
           size_t start = str_val.find('[');
@@ -136,11 +124,10 @@ public:
                 try {
                   tmp_vec.push_back(std::stod(token));
                 } catch (...) {
-                  std::cerr << "[ParamLoader] DEBUG: Failed to parse token '" << token << "'" << std::endl;
+                  // Failed to parse token, skip it
                 }
               }
             }
-            std::cerr << "[ParamLoader] DEBUG: Parsed string as array, size=" << tmp_vec.size() << std::endl;
           }
         }
       }
@@ -154,23 +141,10 @@ public:
       return;
     }
     vec = Eigen::Map<Eigen::Matrix<double, _Rows, 1> >(tmp_vec.data());
-    std::cerr << "[ParamLoader] " << name << " loaded successfully: [" << vec(0) << ", " << vec(1) << ", " << vec(2) << "]" << std::endl;
   }
 
   ParamLoad(const ros::NodeHandle& nh)
   {
-    std::cerr << "[ParamLoader] Constructor called with NodeHandle namespace: '" << nh.getNamespace() << "'" << std::endl;
-    
-    // List all available parameters to debug timing issue
-    std::vector<std::string> all_params;
-    ros::param::getParamNames(all_params);
-    std::cerr << "[ParamLoader] DEBUG: Total parameters on server: " << all_params.size() << std::endl;
-    for (const auto& p : all_params) {
-      if (p.find("mars_gps_node") != std::string::npos) {
-        std::cerr << "[ParamLoader]   Found: " << p << std::endl;
-      }
-    }
-    
     publish_on_propagation_ = nh.param<bool>("pub_on_prop", publish_on_propagation_);
     use_ros_time_now_ = nh.param<bool>("use_ros_time_now", use_ros_time_now_);
     verbose_output_ = nh.param<bool>("verbose", verbose_output_);
@@ -192,27 +166,6 @@ public:
     nh.param("pitch_init_deg", pitch_init_deg_, double());
     nh.param("roll_init_deg", roll_init_deg_, double());
     nh.param("yaw_init_deg", yaw_init_deg_, double());
-    
-    std::cerr << "[ParamLoader] DEBUG: pitch_init_deg=" << pitch_init_deg_ 
-              << ", roll_init_deg=" << roll_init_deg_ 
-              << ", yaw_init_deg=" << yaw_init_deg_ << std::endl;
-    
-    // Direct test of what the parameter server has
-    std::vector<double> test_gyro, test_antenna;
-    bool found_gyro = ros::param::get("/mars_gps_node/gyro_bias_init", test_gyro);
-    bool found_antenna = ros::param::get("/mars_gps_node/antenna_lever_arm", test_antenna);
-    std::cerr << "[ParamLoader] DEBUG: Direct global lookup - gyro_bias_init size=" << test_gyro.size() 
-              << " antenna_lever_arm size=" << test_antenna.size() << std::endl;
-    
-    // Try getting as XmlRpc value to see what it actually is
-    XmlRpc::XmlRpcValue gyro_xml, antenna_xml;
-    if (nh.getParam("gyro_bias_init", gyro_xml)) {
-      std::cerr << "[ParamLoader] DEBUG: gyro_bias_init via getParam - type=" << (int)gyro_xml.getType() 
-                << " (0=invalid,1=bool,2=int,3=double,4=string,5=datetime,6=base64,7=array,8=struct)" << std::endl;
-    } else {
-      std::cerr << "[ParamLoader] DEBUG: gyro_bias_init via getParam - NOT FOUND" << std::endl;
-    }
-    
     check_and_load<3>(gyro_bias_init_, nh, "gyro_bias_init");
     check_and_load<3>(antenna_lever_arm_, nh, "antenna_lever_arm");
 
