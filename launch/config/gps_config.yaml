@@ -22,7 +22,7 @@ sub_sensor_cb_buffer_size: 1
 publish_gps_enu: true
 
 ## Attitude initialization (3-DOF from GREAT-MSF calibration)
-enable_manual_yaw_init: false
+enable_manual_yaw_init: true
 pitch_init_deg: 3.093
 roll_init_deg: 0.118
 yaw_init_deg: -30
