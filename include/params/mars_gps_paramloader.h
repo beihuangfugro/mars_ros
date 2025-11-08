@@ -76,7 +76,9 @@ public:
   void check_and_load(Eigen::Matrix<double, _Rows, 1>& vec, const ros::NodeHandle& nh, const std::string& name)
   {
     std::vector<double> tmp_vec;
-    nh.param(name, tmp_vec, std::vector<double>());
+    bool found = nh.getParam(name, tmp_vec);
+    std::cerr << "[ParamLoader] DEBUG: " << name << " found=" << (found ? "true" : "false") << " size=" << tmp_vec.size() << std::endl;
+    
     if (tmp_vec.size() != _Rows)
     {
       std::cerr << "[ParamLoader] " << name << ": YAML array with wrong size (which is " << tmp_vec.size() << ")"
@@ -85,6 +87,7 @@ public:
       return;
     }
     vec = Eigen::Map<Eigen::Matrix<double, _Rows, 1> >(tmp_vec.data());
+    std::cerr << "[ParamLoader] " << name << " loaded successfully: [" << vec(0) << ", " << vec(1) << ", " << vec(2) << "]" << std::endl;
   }
 
   ParamLoad(const ros::NodeHandle& nh)
@@ -110,6 +113,11 @@ public:
     nh.param("pitch_init_deg", pitch_init_deg_, double());
     nh.param("roll_init_deg", roll_init_deg_, double());
     nh.param("yaw_init_deg", yaw_init_deg_, double());
+    
+    std::cerr << "[ParamLoader] DEBUG: pitch_init_deg=" << pitch_init_deg_ 
+              << ", roll_init_deg=" << roll_init_deg_ 
+              << ", yaw_init_deg=" << yaw_init_deg_ << std::endl;
+    
     check_and_load<3>(gyro_bias_init_, nh, "gyro_bias_init");
     check_and_load<3>(antenna_lever_arm_, nh, "antenna_lever_arm");
 
