@@ -46,8 +46,8 @@ core_init_cov_ba: [0.01,0.01,0.01]
 
 # GPS Settings
 # Measurement noise: how much we trust GPS position measurements
-# RELAXED: 1.5 m std dev to allow filter to adapt during convergence
-gps1_pos_meas_noise: [1.5,1.5,1.5]
+# VERY RELAXED: 5.0 m std dev for moving vehicle with real trajectory variation
+gps1_pos_meas_noise: [5.0,5.0,5.0]
 gps1_vel_meas_noise: [0.1,0.1,0.1]
 gps1_use_dyn_meas_noise: false
 gps1_cal_ig: [0,0,0]
