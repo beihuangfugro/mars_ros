@@ -25,6 +25,7 @@
 #include <std_srvs/SetBool.h>
 
 #include <boost/bind/bind.hpp>
+#include <fstream>
 #include <params/mars_gps_paramloader.h>
 
 ///
@@ -34,6 +35,7 @@ class MarsWrapperGps
 {
 public:
   MarsWrapperGps(ros::NodeHandle nh);
+  ~MarsWrapperGps();
 
   // Settings
   ParamLoad m_sett_;
@@ -125,6 +127,16 @@ public:
   ///
   void RunCoreStatePublisher();
 
+  ///
+  /// \brief initEkfStateLogger Initialize EKF state logger based on parameters
+  ///
+  void initEkfStateLogger();
+
+  ///
+  /// \brief logEkfStateCsv Log one EKF state sample to CSV
+  ///
+  void logEkfStateCsv(const double& timestamp, const mars::CoreStateType& core_state);
+
   // Sensor Updates
   ///
   /// \brief GpsMeasurementUpdate Generic GPS sensor measurement update routine
@@ -134,6 +146,10 @@ public:
   ///
   void GpsMeasurementUpdate(std::shared_ptr<mars::GpsSensorClass> sensor_sptr, const mars::GpsMeasurementType& gps_meas,
                             const mars::Time& timestamp);
+
+private:
+  std::ofstream ekf_log_stream_;
+  bool ekf_log_ready_{ false };
 };
 
 #endif  // MARSWRAPPERGPS_H

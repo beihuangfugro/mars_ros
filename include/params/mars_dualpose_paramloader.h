@@ -16,6 +16,7 @@
 #include <ros/node_handle.h>
 
 #include <Eigen/Dense>
+#include <string>
 
 #define PARAM_PRINTER(args) std::cout << "[ParamLoader] " << args;
 
@@ -53,6 +54,11 @@ public:
 
   bool publish_gps_enu_{ true };
   bool publish_baro_height_{ true };
+
+  // EKF state logging
+  bool enable_ekf_state_logging_{ false };
+  bool ekf_log_append_{ false };
+  std::string ekf_log_file_{ "/tmp/mars_gps_ekf_state.csv" };
 
   // IMU noise
   double g_rate_noise_;
@@ -253,6 +259,11 @@ public:
     // Publisher
     publish_gps_enu_ = nh.param<bool>("publish_gps_enu", publish_gps_enu_);
     publish_baro_height_ = nh.param<bool>("publish_baro_height", publish_baro_height_);
+
+    // EKF state logging
+    enable_ekf_state_logging_ = nh.param<bool>("enable_ekf_state_logging", enable_ekf_state_logging_);
+    ekf_log_append_ = nh.param<bool>("ekf_log_append", ekf_log_append_);
+    ekf_log_file_ = nh.param<std::string>("ekf_log_file", ekf_log_file_);
 
     // IMU parameter
     nh.param("gyro_rate_noise", g_rate_noise_, double());

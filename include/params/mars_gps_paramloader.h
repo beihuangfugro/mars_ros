@@ -49,6 +49,11 @@ public:
   Eigen::Vector3d gyro_bias_init_{ 0, 0, 0 };        ///< Gyro bias initialization [rad/s]
   Eigen::Vector3d antenna_lever_arm_{ 0, 0, 0 };     ///< Antenna lever arm in sensor frame [m]
 
+  // EKF state logging
+  bool enable_ekf_state_logging_{ false };
+  bool ekf_log_append_{ false };
+  std::string ekf_log_file_{ "/tmp/mars_gps_ekf_state.csv" };
+
   double g_rate_noise_;
   double g_bias_noise_;
   double a_noise_;
@@ -168,6 +173,11 @@ public:
     nh.param("yaw_init_deg", yaw_init_deg_, double());
     check_and_load<3>(gyro_bias_init_, nh, "gyro_bias_init");
     check_and_load<3>(antenna_lever_arm_, nh, "antenna_lever_arm");
+
+    // EKF state logging
+    enable_ekf_state_logging_ = nh.param<bool>("enable_ekf_state_logging", enable_ekf_state_logging_);
+    ekf_log_append_ = nh.param<bool>("ekf_log_append", ekf_log_append_);
+    ekf_log_file_ = nh.param<std::string>("ekf_log_file", ekf_log_file_);
 
     nh.param("gyro_rate_noise", g_rate_noise_, double());
     nh.param("gyro_bias_noise", g_bias_noise_, double());

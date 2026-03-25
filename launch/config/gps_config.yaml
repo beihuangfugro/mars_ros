@@ -20,6 +20,9 @@ sub_sensor_cb_buffer_size: 1
 
 # Node specific settings
 publish_gps_enu: true
+enable_ekf_state_logging: true
+ekf_log_append: false
+ekf_log_file: /root/ros1_ws/logs/mars_ros/mars_gps_node_ekf_state.csv # The path in ros docker container
 
 ## Attitude initialization (3-DOF from GREAT-MSF calibration)
 enable_manual_yaw_init: true

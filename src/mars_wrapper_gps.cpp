@@ -25,11 +25,56 @@
 #include <sensor_msgs/NavSatFix.h>
 
 #include <Eigen/Dense>
+#include <cmath>
+#include <fstream>
+#include <ios>
 #include <iostream>
 #include <string>
 #include <iomanip>
 
 using namespace mars;
+
+/// Convert ENU position (relative to GPS reference) to WGS84 lat/lon/altitude.
+static void enuToLLH(const Eigen::Vector3d& enu, const mars::GpsCoordinates& ref,
+                     double& lat_deg, double& lon_deg, double& alt_m)
+{
+  constexpr double a = 6378137.0;
+  constexpr double ecc = 8.1819190842622e-2;
+  constexpr double ecc_sq = ecc * ecc;
+
+  const double lat0 = ref.latitude_ * M_PI / 180.0;
+  const double lon0 = ref.longitude_ * M_PI / 180.0;
+  const double alt0 = ref.altitude_;
+
+  const double s_lat = std::sin(lat0), c_lat = std::cos(lat0);
+  const double s_lon = std::sin(lon0), c_lon = std::cos(lon0);
+
+  // Reference point in ECEF
+  const double N0 = a / std::sqrt(1.0 - ecc_sq * s_lat * s_lat);
+  const double x0 = (N0 + alt0) * c_lat * c_lon;
+  const double y0 = (N0 + alt0) * c_lat * s_lon;
+  const double z0 = (N0 * (1.0 - ecc_sq) + alt0) * s_lat;
+
+  // ENU to ECEF: ecef = R^T * enu + ecef_ref
+  const double e = enu(0), n = enu(1), u = enu(2);
+  const double x = -s_lon * e - s_lat * c_lon * n + c_lat * c_lon * u + x0;
+  const double y =  c_lon * e - s_lat * s_lon * n + c_lat * s_lon * u + y0;
+  const double z =              c_lat * n          + s_lat * u         + z0;
+
+  // ECEF to WGS84 (iterative Bowring)
+  const double p = std::sqrt(x * x + y * y);
+  lon_deg = std::atan2(y, x) * 180.0 / M_PI;
+
+  double lat = std::atan2(z, p * (1.0 - ecc_sq));
+  double N = a;
+  for (int i = 0; i < 5; ++i)
+  {
+    N = a / std::sqrt(1.0 - ecc_sq * std::sin(lat) * std::sin(lat));
+    lat = std::atan2(z + ecc_sq * N * std::sin(lat), p);
+  }
+  lat_deg = lat * 180.0 / M_PI;
+  alt_m = p / std::cos(lat) - N;
+}
 
 MarsWrapperGps::MarsWrapperGps(ros::NodeHandle nh)
   : reconfigure_cb_(boost::bind(&MarsWrapperGps::configCallback, this, _1, _2))
@@ -149,6 +194,70 @@ MarsWrapperGps::MarsWrapperGps(ros::NodeHandle nh)
     std::cout << "  Roll:  " << roll * (180 / M_PI) << " deg" << std::endl;
     std::cout << "  Yaw:   " << yaw * (180 / M_PI) << " deg" << std::endl;
   }
+
+  initEkfStateLogger();
+}
+
+MarsWrapperGps::~MarsWrapperGps()
+{
+  if (ekf_log_stream_.is_open())
+  {
+    ekf_log_stream_.flush();
+    ekf_log_stream_.close();
+  }
+}
+
+void MarsWrapperGps::initEkfStateLogger()
+{
+  if (!m_sett_.enable_ekf_state_logging_)
+  {
+    return;
+  }
+
+  std::ios_base::openmode mode = std::ios::out;
+  mode |= m_sett_.ekf_log_append_ ? std::ios::app : std::ios::trunc;
+
+  const std::string& log_path = m_sett_.ekf_log_file_;
+  ekf_log_stream_.open(log_path, mode);
+  if (!ekf_log_stream_.is_open())
+  {
+    ROS_ERROR_STREAM("Failed to open EKF state log file: " << log_path);
+    return;
+  }
+
+  if (!m_sett_.ekf_log_append_)
+  {
+    ekf_log_stream_ << "timestamp,lat_deg,lon_deg,height_m,v_east,v_north,v_up,q_w,q_x,q_y,q_z,yaw_rad,yaw_deg,bw_x,bw_y,bw_z,ba_x,ba_y,ba_z\n";
+  }
+
+  ekf_log_stream_ << std::fixed << std::setprecision(9);
+  ekf_log_ready_ = true;
+  ROS_INFO_STREAM("EKF state logging enabled: " << log_path);
+}
+
+void MarsWrapperGps::logEkfStateCsv(const double& timestamp, const mars::CoreStateType& core_state)
+{
+  if (!ekf_log_ready_ || !ekf_log_stream_.is_open() || !common_gps_ref_is_set_)
+  {
+    return;
+  }
+
+  const Eigen::Quaterniond q_wi(core_state.q_wi_);
+  const Eigen::Vector3d euler_zyx = q_wi.toRotationMatrix().eulerAngles(2, 1, 0);
+  const double yaw_rad = euler_zyx(0);
+  const double yaw_deg = yaw_rad * (180.0 / M_PI);
+
+  double lat_deg, lon_deg, alt_m;
+  enuToLLH(core_state.p_wi_, gps1_sensor_sptr_->gps_conversion_.get_gps_reference(), lat_deg, lon_deg, alt_m);
+
+  ekf_log_stream_ << timestamp << ','
+                  << lat_deg << ',' << lon_deg << ',' << alt_m << ','
+                  << core_state.v_wi_(0) << ',' << core_state.v_wi_(1) << ',' << core_state.v_wi_(2) << ','
+                  << q_wi.w() << ',' << q_wi.x() << ',' << q_wi.y() << ',' << q_wi.z() << ','
+                  << yaw_rad << ',' << yaw_deg << ','
+                  << core_state.b_w_(0) << ',' << core_state.b_w_(1) << ',' << core_state.b_w_(2) << ','
+                  << core_state.b_a_(0) << ',' << core_state.b_a_(1) << ',' << core_state.b_a_(2)
+                  << '\n';
 }
 
 bool MarsWrapperGps::init()
@@ -335,6 +444,8 @@ void MarsWrapperGps::RunCoreStatePublisher()
 
   pub_core_odom_state_.publish(
       MarsMsgConv::ExtCoreStateToOdomMsg(latest_state.timestamp_.get_seconds(), latest_core_state));
+
+  logEkfStateCsv(latest_state.timestamp_.get_seconds(), latest_core_state);
 
   if (m_sett_.pub_path_)
   {
